@@ -1,0 +1,663 @@
+-- [[ ธีม แดง-ดำ: Loading Screen สำหรับ Delta ]] --
+-- Asset ID: 101313147644163
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+
+-- ป้องกันการรันซ้ำ
+if CoreGui:FindFirstChild("DeltaRedBlackLoading") then
+    CoreGui.DeltaRedBlackLoading:Destroy()
+end
+
+-- สร้าง ScreenGui หลัก
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DeltaRedBlackLoading"
+screenGui.IgnoreGuiInset = true
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+
+-- พยายามใส่ CoreGui ถ้าไม่ได้ให้ใส่ PlayerGui แทน
+pcall(function()
+    screenGui.Parent = CoreGui
+end)
+if not screenGui.Parent then
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+end
+
+-- เฟรมหลัก (พื้นหลังสีดำสนิท)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(1, 0, 1, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+-- รูปภาพพื้นหลัง (ตาม Asset ID ที่กำหนด)
+local bgImage = Instance.new("ImageLabel")
+bgImage.Name = "BackgroundImage"
+bgImage.Size = UDim2.new(1, 0, 1, 0)
+bgImage.BackgroundTransparency = 1
+bgImage.Image = "rbxassetid://101313147644163"
+bgImage.ScaleType = Enum.ScaleType.Stretch
+bgImage.ImageTransparency = 0.2 -- ปรับความโปร่งใสของรูปได้ตามชอบ (0 คือชัดสุด)
+bgImage.Parent = mainFrame
+
+-- แสงเงาโทนแดงดำ (Gradient ทับเพื่อให้เข้าธีมและตัวหนังสืออ่านง่ายขึ้น)
+local gradientOverlay = Instance.new("Frame")
+gradientOverlay.Name = "GradientOverlay"
+gradientOverlay.Size = UDim2.new(1, 0, 1, 0)
+gradientOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+gradientOverlay.BackgroundTransparency = 0.5
+gradientOverlay.BorderSizePixel = 0
+gradientOverlay.Parent = mainFrame
+
+local uigradient = Instance.new("UIGradient")
+uigradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 0.2),
+    NumberSequenceKeypoint.new(0.5, 0.6),
+    NumberSequenceKeypoint.new(1, 0.2)
+})
+uigradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))
+})
+uigradient.Parent = gradientOverlay
+
+-- กล่องข้อความและสถานะตรงกลาง
+local contentContainer = Instance.new("Frame")
+contentContainer.Size = UDim2.new(0, 400, 0, 180)
+contentContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+contentContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
+contentContainer.BackgroundTransparency = 1
+contentContainer.Parent = mainFrame
+
+-- หัวข้อ (Title)
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 50)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "DELTA LOADING"
+titleLabel.TextColor3 = Color3.fromRGB(255, 30, 30)
+titleLabel.TextSize = 28
+titleLabel.TextStrokeTransparency = 0.5
+titleLabel.TextStrokeColor3 = Color3.fromRGB(50, 0, 0)
+titleLabel.Parent = contentContainer
+
+-- ข้อความสถานะ (Status)
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, 0, 0, 30)
+statusLabel.Position = UDim2.new(0, 0, 0, 55)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Font = Enum.Font.GothamMedium
+statusLabel.Text = "กำลังโหลดทรัพยากร..."
+statusLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+statusLabel.TextSize = 16
+statusLabel.Parent = contentContainer
+
+-- หลอดโหลด (Loading Bar Background)
+local barBg = Instance.new("Frame")
+barBg.Size = UDim2.new(0.8, 0, 0, 10)
+barBg.AnchorPoint = Vector2.new(0.5, 0)
+barBg.Position = UDim2.new(0.5, 0, 0, 105)
+barBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+barBg.BorderSizePixel = 0
+barBg.Parent = contentContainer
+
+local barCorner = Instance.new("UICorner")
+barCorner.CornerRadius = UDim.new(1, 0)
+barCorner.Parent = barBg
+
+-- ไส้หลอดโหลด (Loading Bar Fill - สีแดงเด่น)
+local barFill = Instance.new("Frame")
+barFill.Size = UDim2.new(0, 0, 1, 0)
+barFill.BackgroundColor3 = Color3.fromRGB(230, 0, 0)
+barFill.BorderSizePixel = 0
+barFill.Parent = barBg
+
+local fillCorner = Instance.new("UICorner")
+fillCorner.CornerRadius = UDim.new(1, 0)
+fillCorner.Parent = barFill
+
+-- เอฟเฟกต์เรืองแสงที่ไส้หลอด
+local fillGlow = Instance.new("UIStroke")
+fillGlow.Color = Color3.fromRGB(255, 80, 80)
+fillGlow.Thickness = 1
+fillGlow.Parent = barFill
+
+-- จำลองการโหลดและอัปเดตสถานะ
+task.spawn(function()
+    local steps = {
+        {progress = 0.2, text = "กำลังเชื่อมต่อกับระบบ Delta..."},
+        {progress = 0.5, text = "กำลังโหลดรูปพื้นหลังและธีม..."},
+        {progress = 0.8, text = "กำลังเตรียมความพร้อมสคริปต์..."},
+        {progress = 1.0, text = "เสร็จสิ้น! กำลังเข้าสู่เกม..."}
+    }
+    
+    for _, step in ipairs(steps) do
+        local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(barFill, tweenInfo, {Size = UDim2.new(step.progress, 0, 1, 0)})
+        tween:Play()
+        statusLabel.Text = step.text
+        task.wait(0.7)
+    end
+    
+    task.wait(0.5)
+    
+    -- เอฟเฟกต์fade out ปิดหน้าจอโหลด
+    local fadeInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+    local fadeMain = TweenService:Create(mainFrame, fadeInfo, {BackgroundTransparency = 1})
+    local fadeBgImg = TweenService:Create(bgImage, fadeInfo, {ImageTransparency = 1})
+    local fadeTitle = TweenService:Create(titleLabel, fadeInfo, {TextTransparency = 1})
+    local fadeStatus = TweenService:Create(statusLabel, fadeInfo, {TextTransparency = 1})
+    local fadeBarBg = TweenService:Create(barBg, fadeInfo, {BackgroundTransparency = 1})
+    local fadeBarFill = TweenService:Create(barFill, fadeInfo, {BackgroundTransparency = 1})
+    
+    fadeMain:Play()
+    fadeBgImg:Play()
+    fadeTitle:Play()
+    fadeStatus:Play()
+    fadeBarBg:Play()
+    fadeBarFill:Play()
+    
+    fadeMain.Completed:Wait()
+    screenGui:Destroy()
+end)
+
+-- ==========================================
+-- EXZ HUB - Custom UI + Shooter Script (Clean & Fixed)
+-- ==========================================
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local oldGui = playerGui:FindFirstChild("EXZ HUB")
+if oldGui then
+	oldGui:Destroy()
+end
+
+-- ธีมสี UI
+local BG = Color3.fromRGB(14, 8, 8)
+local PANEL = Color3.fromRGB(32, 16, 16)
+local RED = Color3.fromRGB(255, 50, 50)
+local DARKRED = Color3.fromRGB(140, 15, 15)
+local WHITE = Color3.new(1, 1, 1)
+local PINK = Color3.fromRGB(255, 175, 175)
+local TH = Enum.Font.SourceSansBold
+local WIN_W, WIN_H = 460, 360
+
+local function new(class, props, parent)
+	local o = Instance.new(class)
+	for k, v in pairs(props) do
+		o[k] = v
+	end
+	o.Parent = parent
+	return o
+end
+
+local function corner(o, r)
+	new("UICorner", { CornerRadius = UDim.new(0, r) }, o)
+end
+
+local gui = new("ScreenGui", {
+	Name = "EXZ HUB",
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+}, playerGui)
+
+-- หน้าต่างหลัก (Main Window)
+local main = new("Frame", {
+	Name = "Main",
+	Size = UDim2.fromOffset(WIN_W, WIN_H),
+	Position = UDim2.new(0.5, -WIN_W / 2, 0.5, -WIN_H / 2),
+	BackgroundColor3 = BG,
+	BorderSizePixel = 0,
+	ClipsDescendants = true,
+}, gui)
+corner(main, 14)
+new("UIStroke", { Color = RED, Thickness = 2 }, main)
+
+local top = new("Frame", {
+	Name = "TopBar",
+	Size = UDim2.new(1, 0, 0, 42),
+	BackgroundColor3 = DARKRED,
+	BorderSizePixel = 0,
+}, main)
+corner(top, 14)
+
+new("TextLabel", {
+	Size = UDim2.new(1, -100, 1, 0),
+	Position = UDim2.fromOffset(15, 0),
+	BackgroundTransparency = 1,
+	Text = "EXZ HUB - Shooter Edition",
+	TextColor3 = WHITE,
+	TextSize = 17,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+}, top)
+
+local minimize = new("TextButton", {
+	Name = "Minimize",
+	Size = UDim2.fromOffset(36, 36),
+	Position = UDim2.new(1, -76, 0, 3),
+	BackgroundTransparency = 1,
+	Text = "−",
+	TextColor3 = WHITE,
+	TextSize = 24,
+	Font = Enum.Font.GothamBold,
+}, top)
+
+local close = new("TextButton", {
+	Name = "Close",
+	Size = UDim2.fromOffset(36, 36),
+	Position = UDim2.new(1, -38, 0, 3),
+	BackgroundTransparency = 1,
+	Text = "X",
+	TextColor3 = Color3.fromRGB(255, 190, 190),
+	TextSize = 18,
+	Font = Enum.Font.GothamBold,
+}, top)
+
+local logo = new("ImageButton", {
+	Name = "EXZ HUB Logo",
+	Size = UDim2.fromOffset(47, 47),
+	Position = UDim2.new(0.5, -23.5, 0.5, -23.5),
+	BackgroundColor3 = PANEL,
+	BorderSizePixel = 0,
+	Image = "rbxassetid://86612319031713",
+	ScaleType = Enum.ScaleType.Crop,
+	AutoButtonColor = false,
+	Visible = false,
+}, gui)
+corner(logo, 10)
+local logoStroke = new("UIStroke", { Color = RED, Thickness = 2 }, logo)
+
+local tabContainer = new("Frame", {
+	Size = UDim2.new(1, -20, 0, 32),
+	Position = UDim2.fromOffset(10, 50),
+	BackgroundTransparency = 1,
+}, main)
+
+local contentContainer = new("Frame", {
+	Size = UDim2.new(1, -20, 1, -95),
+	Position = UDim2.fromOffset(10, 88),
+	BackgroundTransparency = 1,
+}, main)
+
+local function makeDraggable(object, dragArea)
+	local dragging = false
+	local dragStart, startPosition
+
+	dragArea.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPosition = object.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if not dragging then return end
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			local delta = input.Position - dragStart
+			object.Position = UDim2.new(
+				startPosition.X.Scale, startPosition.X.Offset + delta.X,
+				startPosition.Y.Scale, startPosition.Y.Offset + delta.Y
+			)
+		end
+	end)
+end
+
+makeDraggable(main, top)
+makeDraggable(logo, logo)
+
+local hasBeenMinimized = false
+minimize.MouseButton1Click:Connect(function()
+	if not hasBeenMinimized then
+		logo.Position = UDim2.new(0.5, -23.5, 0.5, -23.5)
+		hasBeenMinimized = true
+	end
+	logo.Visible = true
+	logo.Size = UDim2.fromOffset(1, 1)
+	logo.BackgroundTransparency = 1
+	logo.ImageTransparency = 1
+	logoStroke.Transparency = 1
+
+	TweenService:Create(logo, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(47, 47), BackgroundTransparency = 0, ImageTransparency = 0 }):Play()
+	TweenService:Create(logoStroke, TweenInfo.new(0.35), { Transparency = 0 }):Play()
+	
+	local mainClose = TweenService:Create(main, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.In), { Size = UDim2.fromOffset(1, 1), Position = main.Position })
+	mainClose:Play()
+
+	mainClose.Completed:Connect(function()
+		main.Visible = false
+		main.Size = UDim2.fromOffset(WIN_W, WIN_H)
+	end)
+end)
+
+logo.MouseButton1Click:Connect(function()
+	main.Visible = true
+	main.Size = UDim2.fromOffset(1, 1)
+
+	TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(WIN_W, WIN_H) }):Play()
+	local logoClose = TweenService:Create(logo, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.In), { Size = UDim2.fromOffset(1, 1), BackgroundTransparency = 1, ImageTransparency = 1 })
+	TweenService:Create(logoStroke, TweenInfo.new(0.25), { Transparency = 1 }):Play()
+	logoClose:Play()
+
+	logoClose.Completed:Connect(function()
+		logo.Visible = false
+		logo.Size = UDim2.fromOffset(47, 47)
+		logo.BackgroundTransparency = 0
+		logo.ImageTransparency = 0
+	end)
+end)
+
+close.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
+
+local tabs = {}
+local pages = {}
+
+local function createTab(name, index)
+	local btn = new("TextButton", {
+		Size = UDim2.new(0.32, 0, 1, 0),
+		Position = UDim2.new((index-1)*0.34, 0, 0, 0),
+		BackgroundColor3 = index == 1 and DARKRED or PANEL,
+		Text = name,
+		TextColor3 = WHITE,
+		Font = TH,
+		TextSize = 14,
+	}, tabContainer)
+	corner(btn, 6)
+	
+	local page = new("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundTransparency = 1,
+		Visible = index == 1,
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollBarThickness = 4,
+	}, contentContainer)
+	
+	new("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 8),
+	}, page)
+	
+	table.insert(tabs, btn)
+	table.insert(pages, page)
+	
+	btn.MouseButton1Click:Connect(function()
+		for i, t in ipairs(tabs) do
+			t.BackgroundColor3 = (t == btn) and DARKRED or PANEL
+			pages[i].Visible = (t == btn)
+		end
+	end)
+	
+	return page
+end
+
+local combatPage = createTab("🎯 ต่อสู้", 1)
+local visualsPage = createTab("👁️ มองเห็น", 2)
+local playerPage = createTab("⚡ ผู้เล่น", 3)
+
+-- ปุ่มสลับสวิตช์ (Toggle) ดีไซน์แคปซูลวงกลมเลื่อน สีแดง-ดำ[span_0](start_span)[span_0](end_span)
+local function createToggle(parent, text, default, callback)
+	local frame = new("Frame", {
+		Size = UDim2.new(1, 0, 0, 36),
+		BackgroundColor3 = PANEL,
+	}, parent)
+	corner(frame, 6)
+	
+	new("TextLabel", {
+		Size = UDim2.new(1, -60, 1, 0),
+		Position = UDim2.fromOffset(10, 0),
+		BackgroundTransparency = 1,
+		Text = text,
+		TextColor3 = WHITE,
+		Font = TH,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	}, frame)
+	
+	local state = default
+	
+	local toggleBg = new("TextButton", {
+		Size = UDim2.fromOffset(44, 24),
+		Position = UDim2.new(1, -52, 0.5, -12),
+		BackgroundColor3 = state and RED or Color3.fromRGB(25, 12, 12),
+		Text = "",
+		AutoButtonColor = false,
+	}, frame)
+	corner(toggleBg, 12)
+	
+	local circle = new("Frame", {
+		Size = UDim2.fromOffset(18, 18),
+		Position = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9),
+		BackgroundColor3 = WHITE,
+		BorderSizePixel = 0,
+	}, toggleBg)
+	corner(circle, 9)
+	
+	local function updateToggle(anim)
+		local targetColor = state and RED or Color3.fromRGB(25, 12, 12)
+		local targetPos = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+		if anim then
+			TweenService:Create(toggleBg, TweenInfo.new(0.2), { BackgroundColor3 = targetColor }):Play()
+			TweenService:Create(circle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = targetPos }):Play()
+		else
+			toggleBg.BackgroundColor3 = targetColor
+			circle.Position = targetPos
+		end
+	end
+	
+	updateToggle(false)
+	
+	toggleBg.MouseButton1Click:Connect(function()
+		state = not state
+		updateToggle(true)
+		callback(state)
+	end)
+end
+
+local function createSlider(parent, text, min, max, default, callback)
+	local frame = new("Frame", {
+		Size = UDim2.new(1, 0, 0, 52),
+		BackgroundColor3 = PANEL,
+	}, parent)
+	corner(frame, 6)
+	
+	local label = new("TextLabel", {
+		Size = UDim2.new(1, -20, 0, 22),
+		Position = UDim2.fromOffset(10, 4),
+		BackgroundTransparency = 1,
+		Text = text .. ": " .. default,
+		TextColor3 = WHITE,
+		Font = TH,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	}, frame)
+	
+	local sliderBar = new("Frame", {
+		Size = UDim2.new(1, -20, 0, 6),
+		Position = UDim2.fromOffset(10, 34),
+		BackgroundColor3 = Color3.fromRGB(20, 10, 10),
+	}, frame)
+	corner(sliderBar, 3)
+	
+	local fill = new("Frame", {
+		Size = UDim2.new((default - min)/(max - min), 0, 1, 0),
+		BackgroundColor3 = RED,
+	}, sliderBar)
+	corner(fill, 3)
+	
+	local dragging = false
+	sliderBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+		end
+	end)
+	
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+	
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local pos = math.clamp((input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X, 0, 1)
+			local val = math.floor(min + (max - min) * pos)
+			fill.Size = UDim2.new(pos, 0, 1, 0)
+			label.Text = text .. ": " .. val
+			callback(val)
+		end
+	end)
+end
+
+-- ตัวแปรระบบฟังก์ชันเกม
+local flying = false
+local flySpeed = 50
+local speedVal = 16
+local bodyGyro, bodyVelocity
+local noclipConnection = nil
+
+local aimbotEnabled = false
+local fovToggle = true
+local fovSize = 100
+local lockedTarget = nil
+
+local FOVCircle = nil
+pcall(function()
+	FOVCircle = Drawing.new("Circle")
+	FOVCircle.Visible = false
+	FOVCircle.Filled = false
+	FOVCircle.Thickness = 2
+	FOVCircle.Transparency = 1
+end)
+
+local espEnabled = false
+local tracersEnabled = false
+local tracersPool = {}
+
+local function startFly()
+	local character = player.Character
+	if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+	local hrp = character.HumanoidRootPart
+	
+	bodyGyro = Instance.new("BodyGyro")
+	bodyGyro.P = 9e4
+	bodyGyro.maxTorque = Vector3.new(9e4, 9e4, 9e4)
+	bodyGyro.cframe = hrp.CFrame
+	bodyGyro.Parent = hrp
+
+	bodyVelocity = Instance.new("BodyVelocity")
+	bodyVelocity.velocity = Vector3.new(0, 0, 0)
+	bodyVelocity.maxForce = Vector3.new(9e4, 9e4, 9e4)
+	bodyVelocity.Parent = hrp
+
+	flying = true
+	task.spawn(function()
+		while flying and character and character:FindFirstChild("Humanoid") do
+			RunService.RenderStepped:Wait()
+			local moveDir = character.Humanoid.MoveDirection
+			if moveDir.Magnitude > 0 then
+				bodyVelocity.velocity = Camera.CFrame.LookVector * flySpeed * 2
+			else
+				bodyVelocity.velocity = Vector3.new(0, 0, 0)
+			end
+			bodyGyro.cframe = Camera.CFrame
+		end
+	end)
+end
+
+local function stopFly()
+	flying = false
+	if bodyGyro then bodyGyro:Destroy() end
+	if bodyVelocity then bodyVelocity:Destroy() end
+end
+
+local function toggleNoclip(state)
+	if state then
+		noclipConnection = RunService.Stepped:Connect(function()
+			local character = player.Character
+			if character then
+				for _, part in ipairs(character:GetDescendants()) do
+					if part:IsA("BasePart") and part.CanCollide then
+						part.CanCollide = false
+					end
+				end
+			end
+		end)
+	else
+		if noclipConnection then
+			noclipConnection:Disconnect()
+			noclipConnection = nil
+		end
+	end
+end
+
+local function getClosestPlayerToCursor()
+	if lockedTarget and lockedTarget.Parent and lockedTarget.Parent:FindFirstChild("Humanoid") then
+		if lockedTarget.Parent.Humanoid.Health > 0 then
+			local screenPoint, onScreen = Camera:WorldToScreenPoint(lockedTarget.Position)
+			if onScreen then
+				local mousePos = UserInputService:GetMouseLocation()
+				if (Vector2.new(screenPoint.X, screenPoint.Y) - mousePos).Magnitude < (fovSize * 2.5) then
+					return lockedTarget
+				end
+			end
+		end
+	end
+
+	local target = nil
+	local shortestDist = fovSize
+
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= player then
+			local isSameTeam = (player.Team and p.Team and player.Team == p.Team)
+			if not isSameTeam and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") then
+				if p.Character.Humanoid.Health > 0 then
+					local head = p.Character.Head
+					local screenPoint, onScreen = Camera:WorldToScreenPoint(head.Position)
+					if onScreen then
+						local dist = (Vector2.new(screenPoint.X, screenPoint.Y) - UserInputService:GetMouseLocation()).Magnitude
+						if dist < shortestDist then
+							shortestDist = dist
+							target = head
+						end
+					end
+				end
+			end
+		end
+	end
+	lockedTarget = target
+	return target
+end
+
+RunService.RenderStepped:Connect(function()
+	local viewportSize = Camera.ViewportSize
+	if FOVCircle then
+		FOVCircle.Position = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+		FOVCircle.Radius = fovSize
+		FOVCircle.Visible = aimbotEnabled and fovToggle
+		FOVCircle.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+	end
+
+	if aimbotEnabled then
+		local targetHead = getClosestPlayerToCursor()
+		if targetHead then
+			Camera.CF
